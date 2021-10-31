@@ -1,9 +1,12 @@
 package com.riddhidamani.stock_watch;
 
 
+import static com.riddhidamani.stock_watch.R.drawable.ic_info_icon;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -24,19 +27,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
-
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -64,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                // Code to refresh stock
+                swipeRefreshStocks();
             }
         });
 
@@ -73,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         new Thread(symbolND).start();
 
         readFromJSON();
-        refreshStocksFirstTime();
+        swipeRefreshStocksFirst();
     }
 
     @Override
@@ -96,7 +93,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(!checkNetworkConnection()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("No Network Connection");
-            builder.setMessage("Cannot add content without a network connection");
+            builder.setMessage("Stocks Cannot Be Added Without A Network Connection");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    // Do nothing!
+                }
+            });
             AlertDialog dialog = builder.create();
             dialog.show();
             return;
@@ -118,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 ArrayList<String> result = NameDownloaderRunnable.findMatch(someStock);
 
                 if(result.size() == 0) {
-                    showErrorDialog(someStock);
+                    badDataDialog(someStock);
                 }
                 else if(result.size() == 1) {
                     oneSelection(result.get(0));
@@ -193,7 +196,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public boolean onLongClick(View view) {
-        return false;
+        final int position = recyclerView.getChildLayoutPosition(view);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_delete_icon));
+        builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int pos) {
+                stocksList.remove(position);
+                stockAdapter.notifyDataSetChanged();
+                writeToJSON();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int pos) {
+                // cancelling the dialog, doing nothing!
+            }
+        });
+
+        builder.setMessage("Delete Stock Symbol " + stocksList.get(position).getStockSymbol()+ "?");
+        builder.setTitle("Delete Stock");
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        return true;
     }
 
     private void readFromJSON() {
@@ -251,14 +276,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void addStock(Stock stock) {
         if(stock == null) {
+            badDataDialog(someStock);
             return;
         }
 
         if(stocksList.contains(stock)) {
-            AlertDialog.Builder builder =new AlertDialog.Builder(this);
-            builder.setMessage(stock.getStockSymbol() + "is already displayed.");
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setIcon(ContextCompat.getDrawable(MainActivity.this, ic_info_icon));
             builder.setTitle("Duplicate Stock");
-
+            builder.setMessage("Stock Symbol " + stock.getStockSymbol() + " is already displayed.");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    // Do nothing!
+                }
+            });
             AlertDialog dialog = builder.create();
             dialog.show();
             return;
@@ -287,30 +319,79 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void refreshStocksFirstTime(){
+    private void swipeRefreshStocks() {
+        if(!checkNetworkConnection()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("No Network Connection");
+            builder.setMessage("Stocks Cannot Be Updated Without A Network Connection");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                   // Do nothing!
+                }
+            });
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            swipeRefresh.setRefreshing(false);
+            return;
+        }
+
+        NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
+        new Thread(nameDownloaderRunnable).start();
+
+        List<Stock> tempStockList = new ArrayList<Stock>();
+        for(Stock stock: stocksList){
+            tempStockList.add(stock);
+        }
+
+        stocksList.clear();
+
+        for(Stock stock: tempStockList){
+            String symbol = stock.getStockSymbol();
+            StockDownloaderRunnable stockDownloaderRunnable = new StockDownloaderRunnable(this, symbol);
+            new Thread(stockDownloaderRunnable).start();
+        }
+        swipeRefresh.setRefreshing(false);
+    }
+
+    private void swipeRefreshStocksFirst() {
         if (!checkNetworkConnection()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("No Network Connection");
-            builder.setMessage("Content Cannot Be Refreshed Without A Network Connection");
+            builder.setMessage("Stocks Cannot Be Updated Without A Network Connection");
             AlertDialog dialog = builder.create();
             dialog.show();
             defaultValues();
             swipeRefresh.setRefreshing(false);
             return;
         }
-        List<Stock> tmpStockList = new ArrayList<Stock>();
-        for(Stock stock: stocksList){
-            tmpStockList.add(stock);
-        }
+
+        List<Stock> tempStockList = new ArrayList<Stock>();
+        tempStockList.addAll(stocksList);
         stocksList.clear();
 
-        for(Stock s: tmpStockList){
-            String symbol = s.getStockSymbol();
-            StockDownloaderRunnable stockDownloader = new StockDownloaderRunnable(this, symbol);
-            new Thread(stockDownloader).start();
+        for(Stock stock: tempStockList){
+            String symbol = stock.getStockSymbol();
+            StockDownloaderRunnable stockDownloaderRunnable = new StockDownloaderRunnable(this, symbol);
+            new Thread(stockDownloaderRunnable).start();
         }
 
         swipeRefresh.setRefreshing(false);
+    }
+
+    // Dialog box for Stock Symbol Not found!
+    private void badDataDialog(String string) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Symbol Not Found: " + string);
+        builder.setMessage("Data for stock symbol " + string + " not found");
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                // Do nothing!
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     @Override

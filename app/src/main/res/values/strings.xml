@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Stock Watch</string>
-    <string name="stocksymbol">stockSymbol</string>
+    <string name="stockSymbol">stockSymbol</string>
     <string name="price">price</string>
-    <string name="pricechange">priceChange</string>
-    <string name="companyname">companyName</string>
-    <string name="addstockmenu">addStockMenu</string>
+    <string name="priceChange">priceChange</string>
+    <string name="companyName">companyName</string>
+    <string name="addStockMenu">addStockMenu</string>
 </resources>
