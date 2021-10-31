@@ -1,6 +1,9 @@
 package com.riddhidamani.stock_watch;
 
-public class Stock {
+import java.io.Serializable;
+import java.util.Objects;
+
+public class Stock implements Serializable, Comparable<Stock> {
     private String stockSymbol;
     private String companyName;
     private double price;
@@ -64,5 +67,26 @@ public class Stock {
                 ", priceChange=" + priceChange +
                 ", changePercentage=" + changePercentage +
                 '}';
+    }
+
+    @Override
+    public int compareTo(Stock stock) {
+        return this.stockSymbol.compareTo(stock.getStockSymbol());
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
+        Stock stock = (Stock) object;
+
+        return Objects.equals(stockSymbol, stock.stockSymbol);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(stockSymbol);
     }
 }
