@@ -29,7 +29,7 @@
     <TextView
         android:id="@+id/companyName"
         android:layout_width="213dp"
-        android:layout_height="0dp"
+        android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_marginTop="8dp"
         android:text="@string/companyName"

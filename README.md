@@ -10,6 +10,16 @@ Selected stock symbols and the related names is stored in a JSON file on the dev
 Features: 
 1. Clicking on a stock entry opens a browser displaying the Market Watch web page for the selected stock. 
 2. Swipe-Refresh (pull-down) refreshes stock data
+3. Adding new stock to the MainActivity
+4. Checking for Duplicate (already existing) stocks
+5. Deleting stock from the MainActivity
+6. Network Notification Alert - if no internet connectivity is found. 
+7. Scrollbar feature
 
+Emulator Devices used for testing: Emulator used: Nexus 5X | Resolution: 1080 x 1920 | Details: With Playstore
+
+## Video Demo:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/cawNsCI9pL0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
