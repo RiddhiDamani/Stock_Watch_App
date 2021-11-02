@@ -1,5 +1,6 @@
 package com.riddhidamani.stock_watch;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -14,8 +15,8 @@ import java.util.Locale;
 public class StockAdapter extends RecyclerView.Adapter<StockViewHolder> {
 
     private static final String TAG = "StockAdapter";
-    private List<Stock> stocksList;
-    private MainActivity mainActivity;
+    final private List<Stock> stocksList;
+    final private MainActivity mainActivity;
 
     public StockAdapter(List<Stock> stocksList, MainActivity mainActivity) {
         this.stocksList = stocksList;
@@ -36,14 +37,15 @@ public class StockAdapter extends RecyclerView.Adapter<StockViewHolder> {
         return new StockViewHolder(itemView);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull StockViewHolder holder, int position) {
         Stock stock = stocksList.get(position);
         holder.stockSymbol.setText(stock.getStockSymbol());
         holder.companyName.setText(stock.getCompanyName());
         holder.price.setText(String.format(Locale.getDefault(),"%.2f", stock.getPrice()));
-        Double priceChange = stock.getPriceChange();
-        Double pricePercent = stock.getChangePercentage();
+        double priceChange = stock.getPriceChange();
+        double pricePercent = stock.getChangePercentage();
         String priceChangeStr = String.format(Locale.getDefault(), "%.2f", priceChange);
         String pricePercentStr = String.format(Locale.getDefault(), "%.2f", pricePercent);
 

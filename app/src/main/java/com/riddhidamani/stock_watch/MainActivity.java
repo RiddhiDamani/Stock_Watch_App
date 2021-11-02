@@ -1,8 +1,5 @@
 package com.riddhidamani.stock_watch;
 
-
-import static com.riddhidamani.stock_watch.R.drawable.ic_info_icon;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,7 +7,6 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -56,19 +52,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         stockAdapter = new StockAdapter(stocksList, this);
         recyclerView.setAdapter(stockAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         swipeRefresh = findViewById(R.id.swipeRefresh);
-        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                swipeRefreshStocks();
-            }
-        });
+        swipeRefresh.setOnRefreshListener(() -> swipeRefreshStocks());
 
-        // Load the initial data
+        // Loading the Initial Stock Data
         NameDownloaderRunnable symbolND = new NameDownloaderRunnable(this);
         new Thread(symbolND).start();
-
         readFromJSON();
         swipeRefreshStocksFirst();
     }
@@ -88,17 +77,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return super.onOptionsItemSelected(item);
     }
 
+    // Add Stock Dialog
     private void addStockToMainDialog(){
 
-        if(!checkNetworkConnection()) {
+        if(!checkNetConnection()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("No Network Connection");
             builder.setMessage("Stocks Cannot Be Added Without A Network Connection");
-            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    // Do nothing!
-                }
+            builder.setPositiveButton("OK", (dialogInterface, i) -> {
+                // Do nothing!
             });
             AlertDialog dialog = builder.create();
             dialog.show();
@@ -111,89 +98,76 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
         editText.setGravity(Gravity.CENTER_HORIZONTAL);
-
         builder.setView(editText);
+        builder.setPositiveButton("OK", (dialogInterface, i) -> {
+            someStock = editText.getText().toString().trim();
+            ArrayList<String> result = NameDownloaderRunnable.findMatch(someStock);
 
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                someStock = editText.getText().toString().trim();
-                ArrayList<String> result = NameDownloaderRunnable.findMatch(someStock);
-
-                if(result.size() == 0) {
-                    badDataDialog(someStock);
-                }
-                else if(result.size() == 1) {
-                    oneSelection(result.get(0));
-                }
-                else{
-                    String[] arr = result.toArray(new String[0]);
-                    AlertDialog.Builder builder = new AlertDialog.Builder((MainActivity.this));
-                    builder.setTitle("Make a selection");
-                    builder.setItems(arr, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int pos) {
-                            String stockSymbol = result.get(pos);
-                            doStockSelection(stockSymbol);
-                        }
-                    });
-                    builder.setNegativeButton("Nevermind", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // cancelled the dialog
-                        }
-                    });
-                    AlertDialog dialog2 = builder.create();
-                    dialog2.show();
-                }
+            if(result.size() == 0) {
+                noStockDataDialog(someStock);
+            }
+            else if(result.size() == 1) {
+                fetchStock(result.get(0));
+            }
+            else{
+                String[] arr = result.toArray(new String[0]);
+                AlertDialog.Builder builder1 = new AlertDialog.Builder((MainActivity.this));
+                builder1.setTitle("Make a selection");
+                builder1.setItems(arr, (dialog, pos) -> {
+                    String stockSymbol = result.get(pos);
+                    fetchStock(stockSymbol);
+                });
+                builder1.setNegativeButton("Nevermind", (dialog, pos) -> {
+                    // do nothing
+                });
+                AlertDialog dialog = builder1.create();
+                dialog.show();
             }
         });
 
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int id) {
-            }
+        builder.setNegativeButton("Cancel", (dialog, id) -> {
+            // do nothing
         });
 
         builder.setMessage("Please enter a Stock Symbol or a Company Name:");
         builder.setTitle("Stock Selection");
-
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
-    private void doStockSelection(String searchResult){
-        String[] data = searchResult.split("-");
-        StockDownloaderRunnable stockDownloaderRunnable = new StockDownloaderRunnable(this, data[0].trim());
-        new Thread(stockDownloaderRunnable).start();
-    }
-
-    private void showErrorDialog(String someStock){
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("No data for specified symbol/name");
-        builder.setTitle("No Data Found:" + someStock);
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    private void oneSelection(String someStock){
+    // Fetch Stock data
+    private void fetchStock(String someStock){
         String[] data = someStock.split("-");
         StockDownloaderRunnable stockDownloaderRunnable = new StockDownloaderRunnable(this, data[0].trim());
         new Thread(stockDownloaderRunnable).start();
     }
 
+    // Dialog for no stock data found
+    private void noStockDataDialog(String someStock){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Symbol Not Found: " + someStock);
+        builder.setMessage("Data for stock symbol " + someStock + " not found");
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                // Do nothing!
+            }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    // Extra Credit Functionality
     @Override
     public void onClick(View view) {
         int position = recyclerView.getChildLayoutPosition(view);
         String symbol = stocksList.get(position).getStockSymbol();
 
-        Uri.Builder uriBuilder = Uri.parse(STOCK_URL + symbol).buildUpon();
-        //String urlBuilt = uriBuilder.toString();
-
         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(STOCK_URL + symbol));
         startActivity(browserIntent);
     }
 
+    // On Long Click - Performing Delete stock from the Main Activity.
     @Override
     public boolean onLongClick(View view) {
         final int position = recyclerView.getChildLayoutPosition(view);
@@ -224,9 +198,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void readFromJSON() {
         Log.d(TAG, "readFromJSON: Reading Stocks Data from the JSON File");
         try {
+            double price;
+            double priceChange;
+            double changePercentage;
             FileInputStream inputStream = getApplicationContext().openFileInput("StockData.json");
             byte[] data = new byte[inputStream.available()];
             int loadData = inputStream.read(data);
+            Log.d(TAG, "readFromJSON: Loaded Data: " + loadData + " bytes");
             inputStream.close();
             String jsonData = new String(data);
 
@@ -236,9 +214,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 JSONObject jsonObject = stockArray.getJSONObject(i);
                 String stockSymbol = jsonObject.getString("stockSymbol");
                 String companyName = jsonObject.getString("companyName");
-                Double price = jsonObject.getDouble("price");
-                Double priceChange = jsonObject.getDouble("priceChange");
-                Double changePercentage = jsonObject.getDouble("changePercentage");
+                price = jsonObject.getDouble("price");
+                priceChange = jsonObject.getDouble("priceChange");
+                changePercentage = jsonObject.getDouble("changePercentage");
                 Stock stock = new Stock(stockSymbol, companyName, price, priceChange, changePercentage);
                 stocksList.add(stock);
             }
@@ -249,6 +227,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    // Writing Stock Data to JSON File
     private void writeToJSON() {
         Log.d(TAG, "writeToJSON: Saving Stocks Data into the JSON File");
         try {
@@ -274,15 +253,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    // Add Stock Logic
     public void addStock(Stock stock) {
         if(stock == null) {
-            badDataDialog(someStock);
+            noStockDataDialog(someStock);
             return;
         }
-
         if(stocksList.contains(stock)) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setIcon(ContextCompat.getDrawable(MainActivity.this, ic_info_icon));
+            builder.setIcon(ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_info_icon));
             builder.setTitle("Duplicate Stock");
             builder.setMessage("Stock Symbol " + stock.getStockSymbol() + " is already displayed.");
             builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -305,12 +284,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Toast.makeText(this, "Failed to Download Symbols or Names", Toast.LENGTH_LONG).show();
     }
 
-    private boolean checkNetworkConnection() {
+    // Checking for Network Connection
+    private boolean checkNetConnection() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         return networkInfo != null && networkInfo.isConnectedOrConnecting();
     }
 
+    // If the stock values i.e. "latestPrice", "change", and "changePercent" is null, set to default
+    // values i.e. 0.0
     private void defaultValues() {
         for(Stock stock: stocksList){
             stock.setPrice(0.0);
@@ -319,8 +301,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    // Swipe Refresh Stock Data
     private void swipeRefreshStocks() {
-        if(!checkNetworkConnection()) {
+        if(!checkNetConnection()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("No Network Connection");
             builder.setMessage("Stocks Cannot Be Updated Without A Network Connection");
@@ -338,14 +321,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         NameDownloaderRunnable nameDownloaderRunnable = new NameDownloaderRunnable(this);
         new Thread(nameDownloaderRunnable).start();
-
-        List<Stock> tempStockList = new ArrayList<Stock>();
-        for(Stock stock: stocksList){
+        List<Stock> tempStockList = new ArrayList<>();
+        for(Stock stock: stocksList) {
             tempStockList.add(stock);
         }
-
         stocksList.clear();
-
         for(Stock stock: tempStockList){
             String symbol = stock.getStockSymbol();
             StockDownloaderRunnable stockDownloaderRunnable = new StockDownloaderRunnable(this, symbol);
@@ -354,8 +334,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         swipeRefresh.setRefreshing(false);
     }
 
+    // Swipe Refreshing Data on Initial Loading to Main Activity
     private void swipeRefreshStocksFirst() {
-        if (!checkNetworkConnection()) {
+        if (!checkNetConnection()) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("No Network Connection");
             builder.setMessage("Stocks Cannot Be Updated Without A Network Connection");
@@ -366,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
-        List<Stock> tempStockList = new ArrayList<Stock>();
+        List<Stock> tempStockList = new ArrayList<>();
         tempStockList.addAll(stocksList);
         stocksList.clear();
 
@@ -379,21 +360,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         swipeRefresh.setRefreshing(false);
     }
 
-    // Dialog box for Stock Symbol Not found!
-    private void badDataDialog(String string) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Symbol Not Found: " + string);
-        builder.setMessage("Data for stock symbol " + string + " not found");
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                // Do nothing!
-            }
-        });
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
+    // Pause method
     @Override
     protected void onPause() {
         super.onPause();

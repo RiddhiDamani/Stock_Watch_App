@@ -12,18 +12,16 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
 
 public class NameDownloaderRunnable implements Runnable {
 
     private static final String TAG = "NameDownloaderRunnable";
     private static final String SYM_NAME_URL = "https://api.iextrading.com/1.0/ref-data/symbols";
     public static HashMap<String, String> symbolCompNameMap = new HashMap<>();
-    private MainActivity mainActivity;
+    final private MainActivity mainActivity;
 
     public NameDownloaderRunnable(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -43,12 +41,7 @@ public class NameDownloaderRunnable implements Runnable {
             connection.connect();
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 Log.d(TAG, "run: HTTP ResponseCode = NOT OK: " + connection.getResponseCode());
-                mainActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mainActivity.downloadErrorToast();
-                    }
-                });
+                mainActivity.runOnUiThread(mainActivity::downloadErrorToast);
                 return;
             }
 

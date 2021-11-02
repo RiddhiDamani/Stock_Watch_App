@@ -9,6 +9,7 @@
     android:layout_marginTop="2dp"
     android:layout_marginRight="3dp"
     android:layout_marginBottom="4dp"
+    android:background="@color/colorPrimary"
     android:paddingTop="8dp"
     android:paddingBottom="8dp">
 
@@ -27,12 +28,15 @@
 
     <TextView
         android:id="@+id/companyName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
+        android:layout_width="213dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="8dp"
         android:text="@string/companyName"
         android:textSize="14sp"
+        android:textStyle="italic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/stockSymbol" />
 

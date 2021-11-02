@@ -60,27 +60,21 @@ public class StockDownloaderRunnable implements Runnable {
     private void processStock(String processStock) {
         try {
             JSONObject jsonObjectStock = new JSONObject(processStock);
-
             final String stockSymbol = jsonObjectStock.getString("symbol");
             String companyName = jsonObjectStock.getString("companyName");
-
             String currentPrice = jsonObjectStock.getString("latestPrice");
             double price = 0.0;
             if(!currentPrice.trim().isEmpty())
                 price = Double.parseDouble(currentPrice);
-
             String changePrice = jsonObjectStock.getString("change");
             double priceChange = 0.0;
             if(!changePrice.trim().isEmpty())
                 priceChange = Double.parseDouble(changePrice);
-
             String changePercentage = jsonObjectStock.getString("changePercent");
             double changePercent = 0.0;
             if(!changePercentage.trim().isEmpty())
                 changePercent = Double.parseDouble(changePercentage);
-
             Stock stock = new Stock(stockSymbol, companyName, price, priceChange, changePercent);
-
             mainActivity.runOnUiThread(() -> {
                 mainActivity.addStock(stock);
                 Log.d(TAG, "processStock: Stock added successfully! runOnUiThread: " + stockSymbol);
