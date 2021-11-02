@@ -20,4 +20,4 @@ Emulator Devices used for testing: Emulator used: Nexus 5X | Resolution: 1080 x 
 
 ## Video Demo:
 
-<img src="./app/src/main/res/stockWatch.gif" width="375" height="500"/>
+<img src="./app/src/main/res/stockWatch.gif" width="300" height="500"/>
